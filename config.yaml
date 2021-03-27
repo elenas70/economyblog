@@ -5,7 +5,7 @@ paginate: 5
 title: EconBlog
 
 # Change it to your Disqus shortname before using
-disqusShortname: elenas70-econblog
+disqusShortname: https-econblog-netlify-app
 
 # GA Tracking ID
 googleAnalytics:
