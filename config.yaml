@@ -43,8 +43,8 @@ params:
     article:
         math: false
         license:
-            enabled: true
-            default: Licensed under CC BY-NC-SA 4.0
+            enabled: false
+            default: Licensed under CC0
 
     comments:
         enabled: true
