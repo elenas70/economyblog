@@ -13,5 +13,5 @@ menu:
     weight: -90
 title: About Me
 ---
-My name is Elena Stolpovsky. I have a PhD in Economics with a focus in Labor Economics, and have experience in energy markets and renewable energy. I live in Washington state with my husband, grandma and kids. Connect with me on LinkedIn with research ideas, projects or to chat about current events, economics and society!
+My name is Elena Stolpovsky. I have a PhD in Economics with a focus on Labor Economics, and have experience in energy markets and renewable energy. I live in Washington state with my husband, grandma and kids. Connect with me on LinkedIn with research ideas, projects or to chat about current events, economics and society!
 

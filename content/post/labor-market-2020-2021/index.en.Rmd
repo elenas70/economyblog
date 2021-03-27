@@ -1,0 +1,367 @@
+---
+title: "Labor Force Participation and Employment of Men and Women in the U.S. During the COVID-19 Pandemic"
+subtitle:  "<br> [Econblog](https://elenas70.github.io/econblog/)"
+author: "<br> [Elena Stolpovsky](https://www.linkedin.com/in/estolpovsky/)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+  #  toc: true
+  #  toc_depth: 5
+    code_folding: hide
+bibliography: references.bib
+link-citations: true
+---
+
+<base target="_top"/>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+options(scipen = 999,
+        digits = 2,
+        tibble.print_max = Inf)
+
+```
+
+
+### Changes in the Labor Market in 2020
+
+The ongoing COVID-19 pandemic and the economic restrictions imposed by the governments are causing unemployment and a reduction in the labor force. April 2020 was the most difficult month in terms of unemployment and exits out of the labor force, with unemployment rate for men reaching 13% and that of women reaching 16% across the United States. 
+
+Labor force participation rates of men and women fell by 3 percentage points between February and April 2020. Labor force participation and employment numbers gradually improved from April to October 2020, and stagnated or deteriorated in November 2020 - January 2021. The last two months of 2020 saw a slight decline in labor force participation and employment, and no significant reduction in unemployment rates.
+
+<!-- For a historical analysis of labor force participation by gender based on see [Labor Force Participation in the U.S. 1976-2000. Why out of the Labor Force?]()-->
+
+
+### Data and Methodology
+
+The data for this analysis come from the [Current Population Survey](https://cps.ipums.org/cps/) (CPS). CPS is a monthly survey run by the Census Bureau with questions about demographic and economic characteristics of the U.S. population. CPS is used to calculate the monthly federal statistics on unemployment. I obtain the data from the Integrated Public Use Microdata Series database [-@ipums2020]. 
+
+
+My sample consists of CPS monthly core employment data for January 2020–February 2021. Each monthly sample includes individual and household weights, which allow inferences about the population from the samples. I discuss CPS weights and examine the weight distribution in the [Appendix](#weights).
+```{r}
+library(ipumsr)
+ddi <- read_ipums_ddi("cps_00016.xml")
+d <- read_ipums_micro(ddi)
+```
+
+```{r}
+#library(ipumsr)
+#ddi <- read_ipums_ddi("cps_00001.xml")
+#d <- read_ipums_micro(ddi) #Run in the code chunk not shown to suppress package messages
+library(sjlabelled) #package to remove data labels. Labels slow down analysis
+library(tidyverse)
+library(kableExtra)
+library(formattable)
+d <- d %>%
+  remove_all_labels() %>% filter(EMPSTAT != 1) %>% #excluding military personnel
+  select(-CPSID, -CPSIDP) %>% mutate(
+    month = month.abb[MONTH],
+    year_month = YEAR*100+MONTH,
+    famid = SERIAL + YEAR*10000 + MONTH / 10,
+    #family id is is unique for each family record.
+    id = SERIAL + YEAR*10000 + MONTH / 10 + PERNUM / 1000,
+    #id is unique for each individual record
+    sex = ifelse(SEX == 1, "men", "women"),
+    married_spouse_present = (MARST == 1) * 1,
+    married = (MARST %in% c(1, 2)) * 1,
+    unemployed = (EMPSTAT %in% c(20, 21, 22)) * 1,
+    employed = (EMPSTAT %in% c(1, 10, 12)) * 1,
+    retired = (EMPSTAT == 36) * 1,
+    lfp = (LABFORCE == 2) * 1,
+    age16plus = (AGE > 15) * 1,
+    workingage = (AGE < 63 &
+                    AGE > 17) * 1
+  ) %>% select(-MARST,-EMPSTAT,-LABFORCE,-DIFFANY, -ASECFLAG)
+
+months <- length(unique(d$year_month))
+individuals <- nrow(d)
+families <- length(unique(d$famid))
+```
+The `r months` monthly surveys contain in total about `r format(round(individuals,-3), big.mark=",")` observations of individuals, or about `r format(round(individuals/months,-3), big.mark=",")` individuals per month. The individuals are part of about `r format(round(families,-3), big.mark=",")` observations of households, or about `r format(round(families/months,-3), big.mark=",")` households per month. 
+
+
+The Bureau of Labor Statistics defines **labor force participation rate** as a percentage of civilian noninstitutional population age 16 or older that is in the labor force. **Unemployment rate** is the percentage of those in the labor force that are unemployed. 
+
+
+The unemployment rate is an imperfect indicator of the effect of a social or economic shock on employment, because the denominator of the rate, the number of people in the labor force, is also affected by the shock. I calculate an alternative measure, **employment rate**, or the percentage of all relevant individuals that is employed. The relevant group is the civilian noninstitutional population age 16 or older. 
+
+ I calculate the population labor market rates, standard errors and confidence intervals from sample data with sampling weights using the R package [srvyr](https://cran.r-project.org/web/packages/srvyr/srvyr.pdf)[@srvyr2020]. The population-level statistics are calculated as weighted sample means and standard errors of the mean using the Horvitz-Thompson estimator [@lamley2010 p. 5, 221–22)].
+ 
+### Labor Force Participation, Unemployment and Employment Rates {#stats}
+
+Labor force participation rate fell from 63% in January 2020 to 60% in April 2020. In February 2021 it was  and was 62% in December. Sixty one percent of civilian noninstitutionalized population age 16 and over was employed at the beginning of 2020. In April employment rate was 51%, and in December it was 58%. Unemployment rate was 4% before the COVID impact, peaked at 15% in April and was at 7% in December. 
+
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(withr)
+library(zoo)
+library(xts)
+library(lubridate)
+library(stringr)
+library(ggthemes)
+library(srvyr)
+
+survey <-
+  as_survey(d, weights = c(WTFINL)) %>% filter(age16plus == 1) # represent data as a survey with sampling weights and exclude individuals under 16
+
+rates_monthly <-
+  survey %>% group_by(YEAR, MONTH) %>% summarize(lfp_rate = survey_mean(lfp),
+                                           employment_rate = survey_mean(employed))
+#standard errors are the standard errors of the sample mean that account for the uncertainty of each observation (weights away from 1 mean that the observations deviation from the mean increases the uncertainty, increasing se).
+#The variance attains its maximum value, when all weights except one are zero. Its minimum value is found when all weights are equal (i.e., unweighted mean), in which case it degenerates into the standard error of the mean, squared.https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
+
+unemployment_monthly <-
+  survey %>% filter(lfp == 1) %>% as_survey(weights = c(WTFINL)) %>% group_by(YEAR, MONTH) %>% summarize(unemployment_rate =
+                                                                                                     survey_mean(unemployed))
+
+survey_monthly <-
+  left_join(rates_monthly, unemployment_monthly, by = c("YEAR","MONTH"))
+
+survey_monthly[, -c(1,2)] <-
+  lapply(survey_monthly[, -c(1,2)], percent, 1)#format all columns except the Month Number as percentages
+
+table_input <-
+  survey_monthly %>% mutate(MONTH = month.abb[MONTH]) %>% kbl(
+    caption = "Labor Force Participation, Employment and Unemployment Rates in 2020",
+    col.names = c("Year",
+      "Month",
+      "Labor Force Participation Rate",
+      "Std. Error",
+      "Employment Rate",
+      "Std. Error",
+      "Unemployment Rate",
+      "Std. Error"
+    )
+  ) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+scroll_box(
+  table_input,
+  height = "250px",
+  width = NULL,
+  box_css = "border: 1px solid #ddd; padding: 5px; ",
+  fixed_thead = T
+)
+```
+*Source: Current Population Survey  [-@ipums2020]*\
+Estimates and standard errors are calculated using estimation methods for survey data with sampling weights [@lamley2010; @srvyr2020]. 
+
+### Labor Force Statistics by Sex
+
+The male labor force participation rate was 11 percentage points higher than that of women in the beginning of 2020. This gap did not change significantly throughout 2020, although labor force participation for both sexes fell by 2 percentage points between January and December 2020.
+
+The 2020 recession is unique in that it led to a greater unemployment shock for women than for men. Past U.S. recessions since the 1970s were marked by high unemployment among all labor force participants, but particularly among men. 
+
+```{r}
+
+library(ggplot2)
+library(plotly)
+library(withr)
+library(zoo)
+library(xts)
+library(lubridate)
+library(stringr)
+library(ggthemes)
+library(srvyr)
+
+ rates_monthly <- survey %>% group_by(YEAR, MONTH, sex) %>% summarize(lfp_rate=survey_mean(lfp, vartype = "ci"),
+         employment_rate=survey_mean(employed, vartype = "ci")) %>% 
+     pivot_wider(names_from=sex, values_from=c(lfp_rate,lfp_rate_low,lfp_rate_upp,employment_rate,employment_rate_low,employment_rate_upp))
+ 
+ unemployment_monthly <- survey %>% filter(lfp==1) %>% group_by(YEAR, MONTH, sex) %>% summarize(unemployment_rate=survey_mean(unemployed, vartype = "ci")) %>% 
+   pivot_wider(names_from=sex, values_from=c(unemployment_rate,unemployment_rate_low,unemployment_rate_upp))
+ 
+ survey_monthly <- left_join(rates_monthly, unemployment_monthly,by=c("YEAR", "MONTH"))
+
+ survey_monthly[,-c(1,2)] <- lapply(survey_monthly[,-c(1,2)],percent,0)#format all columns except the Month Number as percentages
+ 
+survey_monthly$Time <- seq(from=as.Date("2020/1/1"), to=as.Date("2021/2/1"), by="month")
+
+ p <-
+  ggplot(survey_monthly, aes(Time)) + geom_line(aes(
+    y =lfp_rate_men,
+    linetype = "Labor force participation rate",
+    color = "men"
+  ))+ geom_ribbon(aes(ymax=lfp_rate_upp_men,ymin=lfp_rate_low_men), alpha=0.2)+
+ 
+   geom_line(aes(
+    y =lfp_rate_women,
+    linetype = "Labor force participation rate",
+    color = "women"
+  )) + geom_ribbon(aes(ymax=lfp_rate_upp_women,ymin=lfp_rate_low_women), alpha=0.2)+
+   #employment rate
+   
+   geom_line(aes(
+    y =employment_rate_men,
+    linetype = "Employment rate",
+    color = "men"
+  ))+ geom_ribbon(aes(ymax=employment_rate_upp_men,ymin=employment_rate_low_men), alpha=0.2)+
+   
+ geom_line(aes(
+    y =employment_rate_women,
+    linetype = "Employment rate",
+    color = "women"
+  )) + geom_ribbon(aes(ymax=employment_rate_upp_women,ymin=employment_rate_low_women), alpha=0.2)+
+
+  geom_line(aes(
+    y =unemployment_rate_men,
+    linetype = "Unemployment rate",
+    color = "men"
+  ))+ geom_ribbon(aes(ymax=unemployment_rate_upp_men,ymin=unemployment_rate_low_men), alpha=0.2)+
+ geom_line(aes(
+    y =unemployment_rate_women,
+    linetype = "Unemployment rate",
+    color = "women"
+  )) + geom_ribbon(aes(ymax=unemployment_rate_upp_women,ymin=unemployment_rate_low_women), alpha=0.2)+
+   
+  
+   
+   
+  labs(title = "Labor Market Rates for Men and Women in 2020–2021")  +
+  scale_y_continuous('Rate', labels = scales::percent_format()) +
+  theme(legend.title = element_blank())
+
+ggplotly(p,
+         tooltip = c("y", "x","ymax","ymin"),
+         height = 500,
+         width = 1000)
+
+```
+The gray band represents the 95% confidence intervals.
+
+```{r}
+rates_monthly <-
+  survey %>% group_by(YEAR, MONTH, sex) %>% summarize(lfp_rate = survey_mean(lfp), employment_rate = survey_mean(employed)) %>%
+  pivot_wider(
+    names_from = sex,
+    values_from = c(lfp_rate, lfp_rate_se, employment_rate, employment_rate_se)
+  )
+
+unemployment_monthly <-
+  survey %>% filter(lfp == 1) %>% group_by(YEAR, MONTH, sex) %>% summarize(unemployment_rate =                                                                      survey_mean(unemployed)) %>%
+  pivot_wider(
+    names_from = sex,
+    values_from = c(unemployment_rate, unemployment_rate_se)
+  )
+
+survey_monthly <-
+  left_join(rates_monthly, unemployment_monthly, by = c("MONTH","YEAR")) %>% select(
+    lfp_rate_men,
+    lfp_rate_se_men,
+    lfp_rate_women,
+    lfp_rate_se_women,
+    employment_rate_men,
+    employment_rate_se_men,
+    employment_rate_women,
+    employment_rate_se_women,
+    unemployment_rate_men,
+    unemployment_rate_se_men,
+    unemployment_rate_women,
+    unemployment_rate_se_women
+  )
+
+survey_monthly[, -1] <- lapply(survey_monthly[, -1], percent, 1)
+
+table_input <-
+  survey_monthly %>% mutate(MONTH = month.abb[MONTH]) %>% kbl(
+    caption = "Labor Market Statistics by Sex in 2020–20201",
+    col.names = c("Year","Month",
+      "Lfp Rate Men",
+      "Std. Error",
+      "Lfp Rate Women",
+      "Std. Error",
+      "Employment Rate Men",
+      "Std. Error",
+      "Employment Rate Women",
+      "Std. Error",
+      "Unemp Rate Men",
+      "Std. Error",
+      "Unemp Rate Women",
+      "Std. Error"
+    )
+  ) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+scroll_box(
+  table_input,
+  height = "290px",
+  width = NULL,
+  box_css = "border: 1px solid #ddd; padding: 5px; ",
+  fixed_thead = T
+)
+
+```
+*Source: Current Population Survey  [-@ipums2020]*\
+Estimates and standard errors are calculated using estimation methods for survey data with sampling weights [@lamley2010; @srvyr2020]. 
+
+
+In [the next part of the analysis of the U.S. labor market in 2020](https://rpubs.com/elenas70/labormarket2020part2) I examine the geographic distribution of unemployment throughout 2020 and discuss the reasons why some regions have been impacted more and have been slower to recover than others.  
+
+
+### Appendix: Current Population Survey Weights {#weights}
+
+All individuals and households surveyed are assigned weights to reflect the fact that some records represent more cases in the population than others. The weights are sampling weights. They are based on the inverse probabilities of selection into the sample, and depend on the known demographic distribution of the population and other factors such as nonresponse. The weights are comparable over time. 
+
+In this section I normalize the individual weights so that in the 2020 sample the relatively underrepresented observations have a weight above 1, and overrepresented observations have a weight below 1. Note that standardization is not necessary for calculating the labor market statistics.
+
+```{r}
+d <- d %>% mutate(iweight = WTFINL * n() / sum(WTFINL))
+```
+The average of the wights for the full sample is 1. The normalized individual weights are calculated as
+
+$\large \text{normalized weight}=\text{weight} \cdot \frac{\text{number of indivividual observations}}{\sum_i{\text{weight}}}$.
+
+The resulting weights range from `r round(min(d$iweight),2)` to `r round(max(d$iweight),2)`.
+
+The histogram of the weights shows that weights are clustered around a lower peak of 0.16 and around a higher peak of 1.22.  
+
+```{r}
+p <-
+  ggplot(d, aes(x = iweight)) + geom_histogram(
+    bins = 50,
+    color = "grey69",
+    fill = "blue",
+    alpha = 0.5
+  ) + xlim(0, 4) +
+  ggtitle("Distribution of the Record Weights") + xlab("Individual Weight") +
+  scale_y_continuous(
+    "Number of Records",
+    labels = function(x)
+      format(x, big.mark = ",")
+  )
+
+ggplotly(p, height = 300, width = 600)
+```
+*Source: Current Population Survey  [-@ipums2020]*
+
+```{r}
+table_input <-
+  d %>% group_by(YEAR, MONTH) %>% summarize(format(n(), big.mark = ","), round(mean(iweight), 2)) %>%
+  mutate(MONTH = paste(month.abb[MONTH], "2020")) %>% kbl(
+    caption = "Number of Individual Records and Record Weights",
+    col.names = c("Year","Month", "Number of Individuals", "Average Normalized Weight")
+  ) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+scroll_box(
+  table_input,
+  height = "250px",
+  width = NULL,
+  box_css = "border: 1px solid #ddd; padding: 5px; ",
+  fixed_thead = T
+)
+  
+```
+*Source: Current Population Survey  [-@ipums2020]*
+
+In April - June 2020 CPS data was collected exclusively by phone and response rates fell. Starting July 2020 in-person interviews began in some areas, and in September 2020 they expanded to all areas. Sample sizes were lower in March–August 2020, and the responses during these months were weighted higher.
+
+
+The next part of this analysis: [The Geography of Unemployment in 2020–2021](https://rpubs.com/elenas70/labormarket2020part2)
+
+<a href="#top">Back to top</a>
+
+### References
+
