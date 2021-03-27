@@ -1,11 +1,11 @@
-baseurl: https://example.com
+baseurl: https://economyblog.netlify.app
 languageCode: en-us
 theme: "hugo-theme-stack"
 paginate: 5
-title: EconomyBlog
+title: EconBlog
 
 # Change it to your Disqus shortname before using
-disqusShortname: hugo-theme-stack
+disqusShortname: elenas70-econblog
 
 # GA Tracking ID
 googleAnalytics:
@@ -35,7 +35,7 @@ params:
 
     sidebar:
         emoji: 
-        subtitle: A blog about the U.S. economy, labor market, and statistical analysis using survey data.
+        subtitle: A blog about the U.S. economy, labor market, and applied statistics.
         avatar:
             local: true
             src: img/avatar.png
@@ -106,7 +106,7 @@ menu:
     main:
         - identifier: home
           name: Home
-          url: /
+          url: https://econblog.netlify.app/
           weight: -100
           pre: home
 
