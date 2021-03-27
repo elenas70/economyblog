@@ -6,7 +6,7 @@ aliases:
 date: "2019-02-28"
 description: Elena Stolpovsky, Economist and Researcher
 lastmod: "2021-3-26"
-license: CC BY-NC-ND
+license: CC0
 menu:
   main:
     pre: user
