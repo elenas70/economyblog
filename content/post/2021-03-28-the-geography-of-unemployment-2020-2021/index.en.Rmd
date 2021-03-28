@@ -190,7 +190,7 @@ p <- ggplot(data = mapdata,
 
 
 ggplotly(p,  height = 800,
-         width = 600)
+         width = 650)
 
 ```
 *Source: Current Population Survey: https://cps.ipums.org*
