@@ -4,12 +4,12 @@ author: Elena Stolpovsky
 date: '2021-03-28'
 slug: the-geography-of-unemployment-2020-2021
 categories:
-  - COVID
+  - Labor Market
 tags:
   - R Markdown
   - COVID
-  - unemployment
-  - labor market
+  - Unemployment
+  - Labor Market
 description: ~
 image: ~
 math: ~
