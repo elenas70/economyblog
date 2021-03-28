@@ -17,8 +17,7 @@ link-citations: true
 <base target="_top"/>
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(include=FALSE,
-                      echo = TRUE,
+knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
                       warning = FALSE)
 options(scipen = 999,
@@ -49,7 +48,7 @@ ddi <- read_ipums_ddi("cps_00016.xml")
 d <- read_ipums_micro(ddi)
 ```
 
-```{r}
+```{r include=FALSE}
 #library(ipumsr)
 #ddi <- read_ipums_ddi("cps_00001.xml")
 #d <- read_ipums_micro(ddi) #Run in the code chunk not shown to suppress package messages
