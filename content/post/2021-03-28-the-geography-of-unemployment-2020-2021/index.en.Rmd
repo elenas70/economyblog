@@ -10,12 +10,7 @@ tags:
   - COVID
   - Unemployment
   - Labor Market
-description: ~
-image: ~
-math: ~
-license: ~
-hidden: no
-comments: yes
+description: The impact of the COVID pandemic on the U.S. economy differed by state. The states most impacted and slowest to recover were states highly dependent on tourism and entertainment and states with high population density and large urban centers. Peak unemployment occured in April and May. Most states saw a gradual recovery until October and Noveber, and a stagnation or a rise in unemployment rates after October 2020.
 bibliography: references.bib
 link-citations: true
 nocite: | 
