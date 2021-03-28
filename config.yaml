@@ -41,7 +41,7 @@ params:
             src: img/avatar.png
 
     article:
-        math: false
+        math: true
         license:
             enabled: false
             default: Licensed under CC0

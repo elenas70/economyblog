@@ -1,0 +1,1386 @@
+---
+title: "Labor Force Participation and Employment of Men and Women in the U.S. During the COVID-19 Pandemic"
+subtitle:  "<br> [Econblog](https://elenas70.github.io/econblog/)" 
+author: "<br> [Elena Stolpovsky](https://www.linkedin.com/in/estolpovsky/)"
+date: 2021-03-01T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+output:
+  html_document:
+  #  toc: true
+  #  toc_depth: 5
+    code_folding: hide
+bibliography: references.bib
+link-citations: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/kePrint/kePrint.js"></script>
+<link href="{{< blogdown/postref >}}index_files/lightable/lightable.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/htmlwidgets/htmlwidgets.js"></script>
+<script src="{{< blogdown/postref >}}index_files/plotly-binding/plotly.js"></script>
+<script src="{{< blogdown/postref >}}index_files/typedarray/typedarray.min.js"></script>
+<script src="{{< blogdown/postref >}}index_files/jquery/jquery.min.js"></script>
+<link href="{{< blogdown/postref >}}index_files/crosstalk/css/crosstalk.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/crosstalk/js/crosstalk.min.js"></script>
+<link href="{{< blogdown/postref >}}index_files/plotly-htmlwidgets-css/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="{{< blogdown/postref >}}index_files/plotly-main/plotly-latest.min.js"></script>
+
+
+<p><base target="_top"/></p>
+<div id="changes-in-the-labor-market-in-2020" class="section level3">
+<h3>Changes in the Labor Market in 2020</h3>
+<p>The ongoing COVID-19 pandemic and the economic restrictions imposed by the governments are causing unemployment and a reduction in the labor force. April 2020 was the most difficult month in terms of unemployment and exits out of the labor force, with unemployment rate for men reaching 13% and that of women reaching 16% across the United States.</p>
+<p>Labor force participation rates of men and women fell by 3 percentage points between February and April 2020. Labor force participation and employment numbers gradually improved from April to October 2020, and stagnated or deteriorated in November 2020 - January 2021. The last two months of 2020 saw a slight decline in labor force participation and employment, and no significant reduction in unemployment rates.</p>
+<!-- For a historical analysis of labor force participation by gender based on see [Labor Force Participation in the U.S. 1976-2000. Why out of the Labor Force?]()-->
+</div>
+<div id="data-and-methodology" class="section level3">
+<h3>Data and Methodology</h3>
+<p>The data for this analysis come from the <a href="https://cps.ipums.org/cps/">Current Population Survey</a> (CPS). CPS is a monthly survey run by the Census Bureau with questions about demographic and economic characteristics of the U.S. population. CPS is used to calculate the monthly federal statistics on unemployment. I obtain the data from the Integrated Public Use Microdata Series database <span class="citation">(<a href="#ref-ipums2020" role="doc-biblioref">2021</a>)</span>.</p>
+<p>My sample consists of CPS monthly core employment data for January 2020–February 2021. Each monthly sample includes individual and household weights, which allow inferences about the population from the samples. I discuss CPS weights and examine the weight distribution in the <a href="#weights">Appendix</a>.</p>
+<pre><code>## Use of data from IPUMS CPS is subject to conditions including that users should
+## cite the data appropriately. Use command `ipums_conditions()` for more details.</code></pre>
+<p>The 14 monthly surveys contain in total about 1,488,000 observations of individuals, or about 106,000 individuals per month. The individuals are part of about 488,000 observations of households, or about 35,000 households per month.</p>
+<p>The Bureau of Labor Statistics defines <strong>labor force participation rate</strong> as a percentage of civilian noninstitutional population age 16 or older that is in the labor force. <strong>Unemployment rate</strong> is the percentage of those in the labor force that are unemployed.</p>
+<p>The unemployment rate is an imperfect indicator of the effect of a social or economic shock on employment, because the denominator of the rate, the number of people in the labor force, is also affected by the shock. I calculate an alternative measure, <strong>employment rate</strong>, or the percentage of all relevant individuals that is employed. The relevant group is the civilian noninstitutional population age 16 or older.</p>
+<p>I calculate the population labor market rates, standard errors and confidence intervals from sample data with sampling weights using the R package <a href="https://cran.r-project.org/web/packages/srvyr/srvyr.pdf">srvyr</a><span class="citation">(Freedman Ellis and Schneider <a href="#ref-srvyr2020" role="doc-biblioref">2020</a>)</span>. The population-level statistics are calculated as weighted sample means and standard errors of the mean using the Horvitz-Thompson estimator <span class="citation">(Lumley <a href="#ref-lamley2010" role="doc-biblioref">2010</a>, 5, 221–22))</span>.</p>
+</div>
+<div id="stats" class="section level3">
+<h3>Labor Force Participation, Unemployment and Employment Rates</h3>
+<p>Labor force participation rate fell from 63% in January 2020 to 60% in April 2020. In February 2021 it was and was 62% in December. Sixty one percent of civilian noninstitutionalized population age 16 and over was employed at the beginning of 2020. In April employment rate was 51%, and in December it was 58%. Unemployment rate was 4% before the COVID impact, peaked at 15% in April and was at 7% in December.</p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:250px; ">
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>
+<span id="tab:unnamed-chunk-3">Table 1: </span>Labor Force Participation, Employment and Unemployment Rates in 2020
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Year
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Month
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Labor Force Participation Rate
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Employment Rate
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Unemployment Rate
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jan
+</td>
+<td style="text-align:right;">
+63.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+60.7%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+4.0%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Feb
+</td>
+<td style="text-align:right;">
+63.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+60.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+3.8%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Mar
+</td>
+<td style="text-align:right;">
+62.7%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+59.8%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+4.6%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Apr
+</td>
+<td style="text-align:right;">
+60.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+51.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+14.5%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+May
+</td>
+<td style="text-align:right;">
+60.8%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+52.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+13.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jun
+</td>
+<td style="text-align:right;">
+62.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+55.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+11.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jul
+</td>
+<td style="text-align:right;">
+62.3%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+55.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+10.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Aug
+</td>
+<td style="text-align:right;">
+62.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+56.8%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+8.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Sep
+</td>
+<td style="text-align:right;">
+61.7%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+7.6%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Oct
+</td>
+<td style="text-align:right;">
+62.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+58.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.5%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Nov
+</td>
+<td style="text-align:right;">
+61.7%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.8%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.3%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Dec
+</td>
+<td style="text-align:right;">
+61.6%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.6%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.5%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Jan
+</td>
+<td style="text-align:right;">
+61.3%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.8%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Feb
+</td>
+<td style="text-align:right;">
+61.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.3%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.6%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>Source: Current Population Survey <span class="citation">(<a href="#ref-ipums2020" role="doc-biblioref">2021</a>)</span></em><br />
+Estimates and standard errors are calculated using estimation methods for survey data with sampling weights <span class="citation">(Lumley <a href="#ref-lamley2010" role="doc-biblioref">2010</a>; Freedman Ellis and Schneider <a href="#ref-srvyr2020" role="doc-biblioref">2020</a>)</span>.</p>
+</div>
+<div id="labor-force-statistics-by-sex" class="section level3">
+<h3>Labor Force Statistics by Sex</h3>
+<p>The male labor force participation rate was 11 percentage points higher than that of women in the beginning of 2020. This gap did not change significantly throughout 2020, although labor force participation for both sexes fell by 2 percentage points between January and December 2020.</p>
+<p>The 2020 recession is unique in that it led to a greater unemployment shock for women than for men. Past U.S. recessions since the 1970s were marked by high unemployment among all labor force participants, but particularly among men.</p>
+<div id="htmlwidget-1" style="width:1000px;height:500px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"data":[{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.689108113766368,0.690888063969219,0.68461692210208,0.659659513411368,0.667623189355053,0.679131863556525,0.682447338077455,0.680847612172149,0.6774170100291,0.680123384168202,0.674814677284162,0.672219739612761,0.671304593212217,0.671280663482143],"text":["lfp_rate_men: 69%<br />Time: 2020-01-01","lfp_rate_men: 69%<br />Time: 2020-02-01","lfp_rate_men: 68%<br />Time: 2020-03-01","lfp_rate_men: 66%<br />Time: 2020-04-01","lfp_rate_men: 67%<br />Time: 2020-05-01","lfp_rate_men: 68%<br />Time: 2020-06-01","lfp_rate_men: 68%<br />Time: 2020-07-01","lfp_rate_men: 68%<br />Time: 2020-08-01","lfp_rate_men: 68%<br />Time: 2020-09-01","lfp_rate_men: 68%<br />Time: 2020-10-01","lfp_rate_men: 67%<br />Time: 2020-11-01","lfp_rate_men: 67%<br />Time: 2020-12-01","lfp_rate_men: 67%<br />Time: 2021-01-01","lfp_rate_men: 67%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"dash"},"hoveron":"points","name":"(Labor force participation rate,men)","legendgroup":"(Labor force participation rate,men)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.684319761990581,0.686123974801683,0.6794578606587,0.654253341822456,0.66216006611834,0.673618253569871,0.677011678955998,0.675506338202798,0.672426189744284,0.675250901445169,0.669873394861796,0.667136172072437,0.666265995538203,0.66622060515797,0.66622060515797,0.676340721806317,0.676343190886231,0.677303307153085,0.679755959706528,0.684995866891235,0.682407830313915,0.686188886141501,0.687882997198912,0.684645473543179,0.673086312591766,0.665065685000279,0.68977598354546,0.695652153136755,0.693896465542155,0.684319761990581],"text":["lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-01-01","lfp_rate_upp_men: 0.70<br />lfp_rate_low_men: 0.69<br />Time: 2020-02-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-03-01","lfp_rate_upp_men: 0.67<br />lfp_rate_low_men: 0.65<br />Time: 2020-04-01","lfp_rate_upp_men: 0.67<br />lfp_rate_low_men: 0.66<br />Time: 2020-05-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-06-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-07-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-08-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-09-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.68<br />Time: 2020-10-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-11-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-12-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2021-01-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2021-02-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2021-02-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2021-02-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2021-01-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-12-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-11-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.68<br />Time: 2020-10-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-09-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-08-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-07-01","lfp_rate_upp_men: 0.68<br />lfp_rate_low_men: 0.67<br />Time: 2020-06-01","lfp_rate_upp_men: 0.67<br />lfp_rate_low_men: 0.66<br />Time: 2020-05-01","lfp_rate_upp_men: 0.67<br />lfp_rate_low_men: 0.65<br />Time: 2020-04-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-03-01","lfp_rate_upp_men: 0.70<br />lfp_rate_low_men: 0.69<br />Time: 2020-02-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-01-01","lfp_rate_upp_men: 0.69<br />lfp_rate_low_men: 0.68<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.578490079175431,0.579930112889975,0.572297747396329,0.546512868979789,0.552850856711446,0.563821069024887,0.567905402728437,0.562731785031508,0.560455074516036,0.565476936967511,0.563078370463204,0.563238254850811,0.557737893865863,0.560159248691765],"text":["lfp_rate_women: 58%<br />Time: 2020-01-01","lfp_rate_women: 58%<br />Time: 2020-02-01","lfp_rate_women: 57%<br />Time: 2020-03-01","lfp_rate_women: 55%<br />Time: 2020-04-01","lfp_rate_women: 55%<br />Time: 2020-05-01","lfp_rate_women: 56%<br />Time: 2020-06-01","lfp_rate_women: 57%<br />Time: 2020-07-01","lfp_rate_women: 56%<br />Time: 2020-08-01","lfp_rate_women: 56%<br />Time: 2020-09-01","lfp_rate_women: 57%<br />Time: 2020-10-01","lfp_rate_women: 56%<br />Time: 2020-11-01","lfp_rate_women: 56%<br />Time: 2020-12-01","lfp_rate_women: 56%<br />Time: 2021-01-01","lfp_rate_women: 56%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,196,1)","dash":"dash"},"hoveron":"points","name":"(Labor force participation rate,women)","legendgroup":"(Labor force participation rate,women)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.573552293429865,0.575014883303439,0.567021085884895,0.541045795418201,0.547280125867924,0.558160001876035,0.562308021807514,0.557234501526267,0.55534801948047,0.560456789847345,0.55802229272642,0.558052653945698,0.552632497545633,0.555023910391299,0.555023910391299,0.565294586992231,0.562843290186092,0.568423855755925,0.568134448199988,0.570497084087677,0.565562129551601,0.568229068536749,0.57350278364936,0.56948213617374,0.558421587554967,0.551979942541376,0.577574408907764,0.58484534247651,0.583427864920996,0.573552293429865],"text":["lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.57<br />Time: 2020-01-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.58<br />Time: 2020-02-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.57<br />Time: 2020-03-01","lfp_rate_upp_women: 0.55<br />lfp_rate_low_women: 0.54<br />Time: 2020-04-01","lfp_rate_upp_women: 0.56<br />lfp_rate_low_women: 0.55<br />Time: 2020-05-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-06-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-07-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-08-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-09-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-10-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-11-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-12-01","lfp_rate_upp_women: 0.56<br />lfp_rate_low_women: 0.55<br />Time: 2021-01-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2021-02-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2021-02-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2021-02-01","lfp_rate_upp_women: 0.56<br />lfp_rate_low_women: 0.55<br />Time: 2021-01-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-12-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-11-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-10-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-09-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-08-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-07-01","lfp_rate_upp_women: 0.57<br />lfp_rate_low_women: 0.56<br />Time: 2020-06-01","lfp_rate_upp_women: 0.56<br />lfp_rate_low_women: 0.55<br />Time: 2020-05-01","lfp_rate_upp_women: 0.55<br />lfp_rate_low_women: 0.54<br />Time: 2020-04-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.57<br />Time: 2020-03-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.58<br />Time: 2020-02-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.57<br />Time: 2020-01-01","lfp_rate_upp_women: 0.58<br />lfp_rate_low_women: 0.57<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.659593146851936,0.661807961157579,0.651153449305061,0.57128271433071,0.587934561062658,0.607727872975361,0.616783931516238,0.626351151474749,0.627548550659086,0.635276693521511,0.630752848742287,0.626829052419665,0.622981448778011,0.623894181356321],"text":["employment_rate_men: 66%<br />Time: 2020-01-01","employment_rate_men: 66%<br />Time: 2020-02-01","employment_rate_men: 65%<br />Time: 2020-03-01","employment_rate_men: 57%<br />Time: 2020-04-01","employment_rate_men: 59%<br />Time: 2020-05-01","employment_rate_men: 61%<br />Time: 2020-06-01","employment_rate_men: 62%<br />Time: 2020-07-01","employment_rate_men: 63%<br />Time: 2020-08-01","employment_rate_men: 63%<br />Time: 2020-09-01","employment_rate_men: 64%<br />Time: 2020-10-01","employment_rate_men: 63%<br />Time: 2020-11-01","employment_rate_men: 63%<br />Time: 2020-12-01","employment_rate_men: 62%<br />Time: 2021-01-01","employment_rate_men: 62%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(Employment rate,men)","legendgroup":"(Employment rate,men)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.65466793909592,0.656909446777666,0.645827662759524,0.565571072707337,0.582153538852661,0.601881819801998,0.611031581053365,0.620752481226815,0.622352045203815,0.630214994073331,0.625629478788178,0.621555347283275,0.617750656631899,0.61863869641636,0.61863869641636,0.629149666296283,0.628212240924122,0.632102757556054,0.635876218696396,0.64033839296969,0.632745056114358,0.631949821722683,0.622536281979111,0.613573926148723,0.593715583272655,0.576994355954082,0.656479235850598,0.666706475537493,0.664518354607951,0.65466793909592],"text":["employment_rate_upp_men: 0.66<br />employment_rate_low_men: 0.65<br />Time: 2020-01-01","employment_rate_upp_men: 0.67<br />employment_rate_low_men: 0.66<br />Time: 2020-02-01","employment_rate_upp_men: 0.66<br />employment_rate_low_men: 0.65<br />Time: 2020-03-01","employment_rate_upp_men: 0.58<br />employment_rate_low_men: 0.57<br />Time: 2020-04-01","employment_rate_upp_men: 0.59<br />employment_rate_low_men: 0.58<br />Time: 2020-05-01","employment_rate_upp_men: 0.61<br />employment_rate_low_men: 0.60<br />Time: 2020-06-01","employment_rate_upp_men: 0.62<br />employment_rate_low_men: 0.61<br />Time: 2020-07-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-08-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-09-01","employment_rate_upp_men: 0.64<br />employment_rate_low_men: 0.63<br />Time: 2020-10-01","employment_rate_upp_men: 0.64<br />employment_rate_low_men: 0.63<br />Time: 2020-11-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-12-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2021-01-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2021-02-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2021-02-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2021-02-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2021-01-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-12-01","employment_rate_upp_men: 0.64<br />employment_rate_low_men: 0.63<br />Time: 2020-11-01","employment_rate_upp_men: 0.64<br />employment_rate_low_men: 0.63<br />Time: 2020-10-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-09-01","employment_rate_upp_men: 0.63<br />employment_rate_low_men: 0.62<br />Time: 2020-08-01","employment_rate_upp_men: 0.62<br />employment_rate_low_men: 0.61<br />Time: 2020-07-01","employment_rate_upp_men: 0.61<br />employment_rate_low_men: 0.60<br />Time: 2020-06-01","employment_rate_upp_men: 0.59<br />employment_rate_low_men: 0.58<br />Time: 2020-05-01","employment_rate_upp_men: 0.58<br />employment_rate_low_men: 0.57<br />Time: 2020-04-01","employment_rate_upp_men: 0.66<br />employment_rate_low_men: 0.65<br />Time: 2020-03-01","employment_rate_upp_men: 0.67<br />employment_rate_low_men: 0.66<br />Time: 2020-02-01","employment_rate_upp_men: 0.66<br />employment_rate_low_men: 0.65<br />Time: 2020-01-01","employment_rate_upp_men: 0.66<br />employment_rate_low_men: 0.65<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.556815625174356,0.560036338460575,0.547800774163515,0.460364422400971,0.474192529502599,0.496190185189211,0.504368953429589,0.51262068190135,0.516278934171711,0.528949270710979,0.528584798911457,0.528383578258916,0.521782024704736,0.525538624825309],"text":["employment_rate_women: 56%<br />Time: 2020-01-01","employment_rate_women: 56%<br />Time: 2020-02-01","employment_rate_women: 55%<br />Time: 2020-03-01","employment_rate_women: 46%<br />Time: 2020-04-01","employment_rate_women: 47%<br />Time: 2020-05-01","employment_rate_women: 50%<br />Time: 2020-06-01","employment_rate_women: 50%<br />Time: 2020-07-01","employment_rate_women: 51%<br />Time: 2020-08-01","employment_rate_women: 52%<br />Time: 2020-09-01","employment_rate_women: 53%<br />Time: 2020-10-01","employment_rate_women: 53%<br />Time: 2020-11-01","employment_rate_women: 53%<br />Time: 2020-12-01","employment_rate_women: 52%<br />Time: 2021-01-01","employment_rate_women: 53%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,196,1)","dash":"solid"},"hoveron":"points","name":"(Employment rate,women)","legendgroup":"(Employment rate,women)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.551838674223146,0.555086130634843,0.542481454466149,0.454868873808071,0.468569022256793,0.490445219547647,0.498686692513683,0.507062531859879,0.511123846368354,0.523880825041075,0.523483777389623,0.523150474619274,0.516634688069071,0.520361698158428,0.520361698158428,0.53071555149219,0.526929361340402,0.533616681898558,0.533685820433292,0.534017716380883,0.521434021975067,0.518178831942822,0.510051214345495,0.501935150830775,0.479816036748406,0.465859970993871,0.55312009386088,0.564986546286307,0.561792576125565,0.551838674223146],"text":["employment_rate_upp_women: 0.56<br />employment_rate_low_women: 0.55<br />Time: 2020-01-01","employment_rate_upp_women: 0.56<br />employment_rate_low_women: 0.56<br />Time: 2020-02-01","employment_rate_upp_women: 0.55<br />employment_rate_low_women: 0.54<br />Time: 2020-03-01","employment_rate_upp_women: 0.47<br />employment_rate_low_women: 0.45<br />Time: 2020-04-01","employment_rate_upp_women: 0.48<br />employment_rate_low_women: 0.47<br />Time: 2020-05-01","employment_rate_upp_women: 0.50<br />employment_rate_low_women: 0.49<br />Time: 2020-06-01","employment_rate_upp_women: 0.51<br />employment_rate_low_women: 0.50<br />Time: 2020-07-01","employment_rate_upp_women: 0.52<br />employment_rate_low_women: 0.51<br />Time: 2020-08-01","employment_rate_upp_women: 0.52<br />employment_rate_low_women: 0.51<br />Time: 2020-09-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-10-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-11-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-12-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2021-01-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2021-02-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2021-02-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2021-02-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2021-01-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-12-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-11-01","employment_rate_upp_women: 0.53<br />employment_rate_low_women: 0.52<br />Time: 2020-10-01","employment_rate_upp_women: 0.52<br />employment_rate_low_women: 0.51<br />Time: 2020-09-01","employment_rate_upp_women: 0.52<br />employment_rate_low_women: 0.51<br />Time: 2020-08-01","employment_rate_upp_women: 0.51<br />employment_rate_low_women: 0.50<br />Time: 2020-07-01","employment_rate_upp_women: 0.50<br />employment_rate_low_women: 0.49<br />Time: 2020-06-01","employment_rate_upp_women: 0.48<br />employment_rate_low_women: 0.47<br />Time: 2020-05-01","employment_rate_upp_women: 0.47<br />employment_rate_low_women: 0.45<br />Time: 2020-04-01","employment_rate_upp_women: 0.55<br />employment_rate_low_women: 0.54<br />Time: 2020-03-01","employment_rate_upp_women: 0.56<br />employment_rate_low_women: 0.56<br />Time: 2020-02-01","employment_rate_upp_women: 0.56<br />employment_rate_low_women: 0.55<br />Time: 2020-01-01","employment_rate_upp_women: 0.56<br />employment_rate_low_women: 0.55<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.0428306768195142,0.0420909034736707,0.0488791201571108,0.133973356381424,0.1193616842,0.105140097840839,0.0962175436806588,0.0800420824324204,0.0736155995962835,0.0659390511936882,0.0652947098293779,0.0675235856942313,0.0719839323651549,0.0705911620930855],"text":["unemployment_rate_men: 4%<br />Time: 2020-01-01","unemployment_rate_men: 4%<br />Time: 2020-02-01","unemployment_rate_men: 5%<br />Time: 2020-03-01","unemployment_rate_men: 13%<br />Time: 2020-04-01","unemployment_rate_men: 12%<br />Time: 2020-05-01","unemployment_rate_men: 11%<br />Time: 2020-06-01","unemployment_rate_men: 10%<br />Time: 2020-07-01","unemployment_rate_men: 8%<br />Time: 2020-08-01","unemployment_rate_men: 7%<br />Time: 2020-09-01","unemployment_rate_men: 7%<br />Time: 2020-10-01","unemployment_rate_men: 7%<br />Time: 2020-11-01","unemployment_rate_men: 7%<br />Time: 2020-12-01","unemployment_rate_men: 7%<br />Time: 2021-01-01","unemployment_rate_men: 7%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"dot"},"hoveron":"points","name":"(Unemployment rate,men)","legendgroup":"(Unemployment rate,men)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.0401619466951656,0.0394676320686954,0.0457902003683418,0.128928962809531,0.114453770654363,0.100396186099828,0.0917052436705685,0.0760164051358436,0.0700602105784994,0.0626190820507417,0.0619363998017265,0.0639872841434774,0.0683962452865081,0.0669900749823124,0.0669900749823124,0.0741922492038586,0.0755716194438017,0.0710598872449852,0.0686530198570292,0.0692590203366347,0.0771709886140676,0.0840677597289973,0.100729843690749,0.10988400958185,0.124269597745637,0.139017749953317,0.0519680399458798,0.044714174878646,0.0454994069438627,0.0401619466951656],"text":["unemployment_rate_upp_men: 0.045<br />unemployment_rate_low_men: 0.040<br />Time: 2020-01-01","unemployment_rate_upp_men: 0.045<br />unemployment_rate_low_men: 0.039<br />Time: 2020-02-01","unemployment_rate_upp_men: 0.052<br />unemployment_rate_low_men: 0.046<br />Time: 2020-03-01","unemployment_rate_upp_men: 0.139<br />unemployment_rate_low_men: 0.129<br />Time: 2020-04-01","unemployment_rate_upp_men: 0.124<br />unemployment_rate_low_men: 0.114<br />Time: 2020-05-01","unemployment_rate_upp_men: 0.110<br />unemployment_rate_low_men: 0.100<br />Time: 2020-06-01","unemployment_rate_upp_men: 0.101<br />unemployment_rate_low_men: 0.092<br />Time: 2020-07-01","unemployment_rate_upp_men: 0.084<br />unemployment_rate_low_men: 0.076<br />Time: 2020-08-01","unemployment_rate_upp_men: 0.077<br />unemployment_rate_low_men: 0.070<br />Time: 2020-09-01","unemployment_rate_upp_men: 0.069<br />unemployment_rate_low_men: 0.063<br />Time: 2020-10-01","unemployment_rate_upp_men: 0.069<br />unemployment_rate_low_men: 0.062<br />Time: 2020-11-01","unemployment_rate_upp_men: 0.071<br />unemployment_rate_low_men: 0.064<br />Time: 2020-12-01","unemployment_rate_upp_men: 0.076<br />unemployment_rate_low_men: 0.068<br />Time: 2021-01-01","unemployment_rate_upp_men: 0.074<br />unemployment_rate_low_men: 0.067<br />Time: 2021-02-01","unemployment_rate_upp_men: 0.074<br />unemployment_rate_low_men: 0.067<br />Time: 2021-02-01","unemployment_rate_upp_men: 0.074<br />unemployment_rate_low_men: 0.067<br />Time: 2021-02-01","unemployment_rate_upp_men: 0.076<br />unemployment_rate_low_men: 0.068<br />Time: 2021-01-01","unemployment_rate_upp_men: 0.071<br />unemployment_rate_low_men: 0.064<br />Time: 2020-12-01","unemployment_rate_upp_men: 0.069<br />unemployment_rate_low_men: 0.062<br />Time: 2020-11-01","unemployment_rate_upp_men: 0.069<br />unemployment_rate_low_men: 0.063<br />Time: 2020-10-01","unemployment_rate_upp_men: 0.077<br />unemployment_rate_low_men: 0.070<br />Time: 2020-09-01","unemployment_rate_upp_men: 0.084<br />unemployment_rate_low_men: 0.076<br />Time: 2020-08-01","unemployment_rate_upp_men: 0.101<br />unemployment_rate_low_men: 0.092<br />Time: 2020-07-01","unemployment_rate_upp_men: 0.110<br />unemployment_rate_low_men: 0.100<br />Time: 2020-06-01","unemployment_rate_upp_men: 0.124<br />unemployment_rate_low_men: 0.114<br />Time: 2020-05-01","unemployment_rate_upp_men: 0.139<br />unemployment_rate_low_men: 0.129<br />Time: 2020-04-01","unemployment_rate_upp_men: 0.052<br />unemployment_rate_low_men: 0.046<br />Time: 2020-03-01","unemployment_rate_upp_men: 0.045<br />unemployment_rate_low_men: 0.039<br />Time: 2020-02-01","unemployment_rate_upp_men: 0.045<br />unemployment_rate_low_men: 0.040<br />Time: 2020-01-01","unemployment_rate_upp_men: 0.045<br />unemployment_rate_low_men: 0.040<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659],"y":[0.0374672873076226,0.0343037445154601,0.0428045948883488,0.157632969813934,0.142277661785195,0.119950969467392,0.111878578709755,0.0890497115377125,0.0788219116090114,0.0645962087373872,0.0612589176944795,0.0618826514209825,0.0644673233728207,0.0618049669755729],"text":["unemployment_rate_women: 4%<br />Time: 2020-01-01","unemployment_rate_women: 3%<br />Time: 2020-02-01","unemployment_rate_women: 4%<br />Time: 2020-03-01","unemployment_rate_women: 16%<br />Time: 2020-04-01","unemployment_rate_women: 14%<br />Time: 2020-05-01","unemployment_rate_women: 12%<br />Time: 2020-06-01","unemployment_rate_women: 11%<br />Time: 2020-07-01","unemployment_rate_women: 9%<br />Time: 2020-08-01","unemployment_rate_women: 8%<br />Time: 2020-09-01","unemployment_rate_women: 6%<br />Time: 2020-10-01","unemployment_rate_women: 6%<br />Time: 2020-11-01","unemployment_rate_women: 6%<br />Time: 2020-12-01","unemployment_rate_women: 6%<br />Time: 2021-01-01","unemployment_rate_women: 6%<br />Time: 2021-02-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,196,1)","dash":"dot"},"hoveron":"points","name":"(Unemployment rate,women)","legendgroup":"(Unemployment rate,women)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[18262,18293,18322,18353,18383,18414,18444,18475,18506,18536,18567,18597,18628,18659,18659,18659,18628,18597,18567,18536,18506,18475,18444,18414,18383,18353,18322,18293,18262,18262],"y":[0.0348041925264608,0.0318031081755002,0.0397917224707576,0.152010997436096,0.136741463699426,0.114727456085439,0.106900887641371,0.0846182699009163,0.0749635880475001,0.0611284796972803,0.0578335001524325,0.0583557473372644,0.0608970529501794,0.0583221081446676,0.0583221081446676,0.0652878258064783,0.068037593795462,0.0654095555047007,0.0646843352365264,0.0680639377774941,0.0826802351705226,0.0934811531745086,0.116856269778139,0.125174482849346,0.147813859870965,0.163254942191772,0.04581746730594,0.03680438085542,0.0401303820887843,0.0348041925264608],"text":["unemployment_rate_upp_women: 0.040<br />unemployment_rate_low_women: 0.035<br />Time: 2020-01-01","unemployment_rate_upp_women: 0.037<br />unemployment_rate_low_women: 0.032<br />Time: 2020-02-01","unemployment_rate_upp_women: 0.046<br />unemployment_rate_low_women: 0.040<br />Time: 2020-03-01","unemployment_rate_upp_women: 0.163<br />unemployment_rate_low_women: 0.152<br />Time: 2020-04-01","unemployment_rate_upp_women: 0.148<br />unemployment_rate_low_women: 0.137<br />Time: 2020-05-01","unemployment_rate_upp_women: 0.125<br />unemployment_rate_low_women: 0.115<br />Time: 2020-06-01","unemployment_rate_upp_women: 0.117<br />unemployment_rate_low_women: 0.107<br />Time: 2020-07-01","unemployment_rate_upp_women: 0.093<br />unemployment_rate_low_women: 0.085<br />Time: 2020-08-01","unemployment_rate_upp_women: 0.083<br />unemployment_rate_low_women: 0.075<br />Time: 2020-09-01","unemployment_rate_upp_women: 0.068<br />unemployment_rate_low_women: 0.061<br />Time: 2020-10-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2020-11-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2020-12-01","unemployment_rate_upp_women: 0.068<br />unemployment_rate_low_women: 0.061<br />Time: 2021-01-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2021-02-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2021-02-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2021-02-01","unemployment_rate_upp_women: 0.068<br />unemployment_rate_low_women: 0.061<br />Time: 2021-01-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2020-12-01","unemployment_rate_upp_women: 0.065<br />unemployment_rate_low_women: 0.058<br />Time: 2020-11-01","unemployment_rate_upp_women: 0.068<br />unemployment_rate_low_women: 0.061<br />Time: 2020-10-01","unemployment_rate_upp_women: 0.083<br />unemployment_rate_low_women: 0.075<br />Time: 2020-09-01","unemployment_rate_upp_women: 0.093<br />unemployment_rate_low_women: 0.085<br />Time: 2020-08-01","unemployment_rate_upp_women: 0.117<br />unemployment_rate_low_women: 0.107<br />Time: 2020-07-01","unemployment_rate_upp_women: 0.125<br />unemployment_rate_low_women: 0.115<br />Time: 2020-06-01","unemployment_rate_upp_women: 0.148<br />unemployment_rate_low_women: 0.137<br />Time: 2020-05-01","unemployment_rate_upp_women: 0.163<br />unemployment_rate_low_women: 0.152<br />Time: 2020-04-01","unemployment_rate_upp_women: 0.046<br />unemployment_rate_low_women: 0.040<br />Time: 2020-03-01","unemployment_rate_upp_women: 0.037<br />unemployment_rate_low_women: 0.032<br />Time: 2020-02-01","unemployment_rate_upp_women: 0.040<br />unemployment_rate_low_women: 0.035<br />Time: 2020-01-01","unemployment_rate_upp_women: 0.040<br />unemployment_rate_low_women: 0.035<br />Time: 2020-01-01"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"transparent","dash":"solid"},"fill":"toself","fillcolor":"rgba(51,51,51,0.2)","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":48.1461187214612,"r":7.30593607305936,"b":44.5662100456621,"l":43.1050228310502},"plot_bgcolor":"rgba(235,235,235,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"title":{"text":"Labor Market Rates for Men and Women in 2020–2021","font":{"color":"rgba(0,0,0,1)","family":"","size":17.5342465753425},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[18242.15,18678.85],"tickmode":"array","ticktext":["Jan 2020","Apr 2020","Jul 2020","Oct 2020","Jan 2021"],"tickvals":[18262,18353,18444,18536,18628],"categoryorder":"array","categoryarray":["Jan 2020","Apr 2020","Jul 2020","Oct 2020","Jan 2021"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"Time","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-0.00138934407256255,0.728844605384817],"tickmode":"array","ticktext":["0%","20%","40%","60%"],"tickvals":[0,0.2,0.4,0.6],"categoryorder":"array","categoryarray":["0%","20%","40%","60%"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"Rate","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":true,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895},"y":1},"hovermode":"closest","width":1000,"height":500,"barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"2bb469d95464":{"y":{},"linetype":{},"colour":{},"x":{},"type":"scatter"},"2bb415c431c8":{"ymax":{},"ymin":{},"x":{}},"2bb41ee27868":{"y":{},"linetype":{},"colour":{},"x":{}},"2bb4523411b2":{"ymax":{},"ymin":{},"x":{}},"2bb423f422c8":{"y":{},"linetype":{},"colour":{},"x":{}},"2bb42fcc2c":{"ymax":{},"ymin":{},"x":{}},"2bb414717812":{"y":{},"linetype":{},"colour":{},"x":{}},"2bb41b573dd":{"ymax":{},"ymin":{},"x":{}},"2bb412e836c9":{"y":{},"linetype":{},"colour":{},"x":{}},"2bb462896e6":{"ymax":{},"ymin":{},"x":{}},"2bb41aea76c0":{"y":{},"linetype":{},"colour":{},"x":{}},"2bb474a24969":{"ymax":{},"ymin":{},"x":{}}},"cur_data":"2bb469d95464","visdat":{"2bb469d95464":["function (y) ","x"],"2bb415c431c8":["function (y) ","x"],"2bb41ee27868":["function (y) ","x"],"2bb4523411b2":["function (y) ","x"],"2bb423f422c8":["function (y) ","x"],"2bb42fcc2c":["function (y) ","x"],"2bb414717812":["function (y) ","x"],"2bb41b573dd":["function (y) ","x"],"2bb412e836c9":["function (y) ","x"],"2bb462896e6":["function (y) ","x"],"2bb41aea76c0":["function (y) ","x"],"2bb474a24969":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<p>The gray band represents the 95% confidence intervals.</p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:290px; ">
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>
+<span id="tab:unnamed-chunk-5">Table 2: </span>Labor Market Statistics by Sex in 2020–20201
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Year
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Month
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Lfp Rate Men
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Lfp Rate Women
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Employment Rate Men
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Employment Rate Women
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Unemp Rate Men
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Unemp Rate Women
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Std. Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jan
+</td>
+<td style="text-align:right;">
+68.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+57.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+66.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+55.7%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+4.3%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+<td style="text-align:right;">
+3.7%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Feb
+</td>
+<td style="text-align:right;">
+69.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+58.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+66.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+56.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+4.2%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+<td style="text-align:right;">
+3.4%
+</td>
+<td style="text-align:right;">
+0.1%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Mar
+</td>
+<td style="text-align:right;">
+68.5%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+57.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+65.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+54.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+4.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+4.3%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Apr
+</td>
+<td style="text-align:right;">
+66.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+54.7%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+57.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+46.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+13.4%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+15.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+May
+</td>
+<td style="text-align:right;">
+66.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+55.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+58.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+47.4%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+11.9%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+14.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jun
+</td>
+<td style="text-align:right;">
+67.9%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.4%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+60.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+49.6%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+10.5%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+12.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jul
+</td>
+<td style="text-align:right;">
+68.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+61.7%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+50.4%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+9.6%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+11.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Aug
+</td>
+<td style="text-align:right;">
+68.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+62.6%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+51.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+8.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+8.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Sep
+</td>
+<td style="text-align:right;">
+67.7%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+62.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+51.6%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+7.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+7.9%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Oct
+</td>
+<td style="text-align:right;">
+68.0%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+56.5%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+63.5%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+52.9%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+6.6%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.5%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Nov
+</td>
+<td style="text-align:right;">
+67.5%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+63.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+52.9%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+6.5%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Dec
+</td>
+<td style="text-align:right;">
+67.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+62.7%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+52.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+6.8%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Jan
+</td>
+<td style="text-align:right;">
+67.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+55.8%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+62.3%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+52.2%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+7.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.4%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Feb
+</td>
+<td style="text-align:right;">
+67.1%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+56.0%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+62.4%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+52.6%
+</td>
+<td style="text-align:right;">
+0.3%
+</td>
+<td style="text-align:right;">
+7.1%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+<td style="text-align:right;">
+6.2%
+</td>
+<td style="text-align:right;">
+0.2%
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>Source: Current Population Survey <span class="citation">(<a href="#ref-ipums2020" role="doc-biblioref">2021</a>)</span></em><br />
+Estimates and standard errors are calculated using estimation methods for survey data with sampling weights <span class="citation">(Lumley <a href="#ref-lamley2010" role="doc-biblioref">2010</a>; Freedman Ellis and Schneider <a href="#ref-srvyr2020" role="doc-biblioref">2020</a>)</span>.</p>
+<p>In <a href="https://rpubs.com/elenas70/labormarket2020part2">the next part of the analysis of the U.S. labor market in 2020</a> I examine the geographic distribution of unemployment throughout 2020 and discuss the reasons why some regions have been impacted more and have been slower to recover than others.</p>
+</div>
+<div id="weights" class="section level3">
+<h3>Appendix: Current Population Survey Weights</h3>
+<p>All individuals and households surveyed are assigned weights to reflect the fact that some records represent more cases in the population than others. The weights are sampling weights. They are based on the inverse probabilities of selection into the sample, and depend on the known demographic distribution of the population and other factors such as nonresponse. The weights are comparable over time.</p>
+<p>In this section I normalize the individual weights so that in the 2020 sample the relatively underrepresented observations have a weight above 1, and overrepresented observations have a weight below 1. Note that standardization is not necessary for calculating the labor market statistics.</p>
+<p>The average of the wights for the full sample is 1. The normalized individual weights are calculated as</p>
+<p><span class="math inline">\(\large \text{normalized weight}=\text{weight} \cdot \frac{\text{number of indivividual observations}}{\sum_i{\text{weight}}}\)</span>.</p>
+<p>The resulting weights range from 0.04 to 14.19.</p>
+<p>The histogram of the weights shows that weights are clustered around a lower peak of 0.16 and around a higher peak of 1.22.</p>
+<div id="htmlwidget-2" style="width:600px;height:300px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-2">{"x":{"data":[{"orientation":"v","width":[null,0.0816326530612245,0.0816326530612245,0.0816326530612245,0.0816326530612245,0.0816326530612246,0.0816326530612244,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612244,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612239,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612237,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612237,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612237,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612237,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612246,0.0816326530612237,null],"base":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"x":[null,0.0816326530612245,0.163265306122449,0.244897959183673,0.326530612244898,0.408163265306122,0.489795918367347,0.571428571428571,0.653061224489796,0.73469387755102,0.816326530612245,0.897959183673469,0.979591836734694,1.06122448979592,1.14285714285714,1.22448979591837,1.30612244897959,1.38775510204082,1.46938775510204,1.55102040816327,1.63265306122449,1.71428571428571,1.79591836734694,1.87755102040816,1.95918367346939,2.04081632653061,2.12244897959184,2.20408163265306,2.28571428571429,2.36734693877551,2.44897959183673,2.53061224489796,2.61224489795918,2.69387755102041,2.77551020408163,2.85714285714286,2.93877551020408,3.02040816326531,3.10204081632653,3.18367346938775,3.26530612244898,3.3469387755102,3.42857142857143,3.51020408163265,3.59183673469388,3.6734693877551,3.75510204081633,3.83673469387755,3.91836734693878,null],"y":[0,42385,95029,85284,65843,56501,55957,55018,49440,43920,43537,50285,65975,86333,103488,105715,95314,79412,63777,50817,39661,30221,23845,18844,15207,11850,9736,7877,6563,5269,4184,3385,2831,2211,1942,1552,1281,1114,915,799,703,622,512,477,372,309,252,213,201,82],"text":["count:      0<br />iweight: 0.000","count:  42385<br />iweight: 0.082","count:  95029<br />iweight: 0.163","count:  85284<br />iweight: 0.245","count:  65843<br />iweight: 0.327","count:  56501<br />iweight: 0.408","count:  55957<br />iweight: 0.490","count:  55018<br />iweight: 0.571","count:  49440<br />iweight: 0.653","count:  43920<br />iweight: 0.735","count:  43537<br />iweight: 0.816","count:  50285<br />iweight: 0.898","count:  65975<br />iweight: 0.980","count:  86333<br />iweight: 1.061","count: 103488<br />iweight: 1.143","count: 105715<br />iweight: 1.224","count:  95314<br />iweight: 1.306","count:  79412<br />iweight: 1.388","count:  63777<br />iweight: 1.469","count:  50817<br />iweight: 1.551","count:  39661<br />iweight: 1.633","count:  30221<br />iweight: 1.714","count:  23845<br />iweight: 1.796","count:  18844<br />iweight: 1.878","count:  15207<br />iweight: 1.959","count:  11850<br />iweight: 2.041","count:   9736<br />iweight: 2.122","count:   7877<br />iweight: 2.204","count:   6563<br />iweight: 2.286","count:   5269<br />iweight: 2.367","count:   4184<br />iweight: 2.449","count:   3385<br />iweight: 2.531","count:   2831<br />iweight: 2.612","count:   2211<br />iweight: 2.694","count:   1942<br />iweight: 2.776","count:   1552<br />iweight: 2.857","count:   1281<br />iweight: 2.939","count:   1114<br />iweight: 3.020","count:    915<br />iweight: 3.102","count:    799<br />iweight: 3.184","count:    703<br />iweight: 3.265","count:    622<br />iweight: 3.347","count:    512<br />iweight: 3.429","count:    477<br />iweight: 3.510","count:    372<br />iweight: 3.592","count:    309<br />iweight: 3.673","count:    252<br />iweight: 3.755","count:    213<br />iweight: 3.837","count:    201<br />iweight: 3.918","count:     82<br />iweight: 4.000"],"type":"bar","marker":{"autocolorscale":false,"color":"rgba(0,0,255,0.5)","line":{"width":1.88976377952756,"color":"rgba(176,176,176,1)"}},"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":48.1461187214612,"r":7.30593607305936,"b":44.5662100456621,"l":66.4840182648402},"plot_bgcolor":"rgba(235,235,235,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"title":{"text":"Distribution of the Record Weights","font":{"color":"rgba(0,0,0,1)","family":"","size":17.5342465753425},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-0.2,4.2],"tickmode":"array","ticktext":["0","1","2","3","4"],"tickvals":[0,1,2,3,4],"categoryorder":"array","categoryarray":["0","1","2","3","4"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"Individual Weight","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-5285.75,111000.75],"tickmode":"array","ticktext":["      0"," 25,000"," 50,000"," 75,000","100,000"],"tickvals":[0,25000,50000,75000,100000],"categoryorder":"array","categoryarray":["      0"," 25,000"," 50,000"," 75,000","100,000"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"Number of Records","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","width":600,"height":300,"barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"2bb438a65ff6":{"x":{},"type":"bar"}},"cur_data":"2bb438a65ff6","visdat":{"2bb438a65ff6":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<p><em>Source: Current Population Survey <span class="citation">(<a href="#ref-ipums2020" role="doc-biblioref">2021</a>)</span></em></p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:250px; ">
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>
+<span id="tab:unnamed-chunk-8">Table 3: </span>Number of Individual Records and Record Weights
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Year
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Month
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Number of Individuals
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Average Normalized Weight
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jan 2020
+</td>
+<td style="text-align:left;">
+116,837
+</td>
+<td style="text-align:right;">
+0.91
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Feb 2020
+</td>
+<td style="text-align:left;">
+117,477
+</td>
+<td style="text-align:right;">
+0.90
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Mar 2020
+</td>
+<td style="text-align:left;">
+104,520
+</td>
+<td style="text-align:right;">
+1.02
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Apr 2020
+</td>
+<td style="text-align:left;">
+101,278
+</td>
+<td style="text-align:right;">
+1.05
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+May 2020
+</td>
+<td style="text-align:left;">
+97,437
+</td>
+<td style="text-align:right;">
+1.09
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jun 2020
+</td>
+<td style="text-align:left;">
+93,237
+</td>
+<td style="text-align:right;">
+1.14
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Jul 2020
+</td>
+<td style="text-align:left;">
+95,284
+</td>
+<td style="text-align:right;">
+1.12
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Aug 2020
+</td>
+<td style="text-align:left;">
+99,360
+</td>
+<td style="text-align:right;">
+1.07
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Sep 2020
+</td>
+<td style="text-align:left;">
+110,738
+</td>
+<td style="text-align:right;">
+0.96
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Oct 2020
+</td>
+<td style="text-align:left;">
+113,346
+</td>
+<td style="text-align:right;">
+0.94
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Nov 2020
+</td>
+<td style="text-align:left;">
+111,665
+</td>
+<td style="text-align:right;">
+0.95
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:left;">
+Dec 2020
+</td>
+<td style="text-align:left;">
+108,000
+</td>
+<td style="text-align:right;">
+0.99
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Jan 2020
+</td>
+<td style="text-align:left;">
+110,274
+</td>
+<td style="text-align:right;">
+0.96
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:left;">
+Feb 2020
+</td>
+<td style="text-align:left;">
+109,008
+</td>
+<td style="text-align:right;">
+0.98
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>Source: Current Population Survey <span class="citation">(<a href="#ref-ipums2020" role="doc-biblioref">2021</a>)</span></em></p>
+<p>In April - June 2020 CPS data was collected exclusively by phone and response rates fell. Starting July 2020 in-person interviews began in some areas, and in September 2020 they expanded to all areas. Sample sizes were lower in March–August 2020, and the responses during these months were weighted higher.</p>
+<p>The next part of this analysis: <a href="https://rpubs.com/elenas70/labormarket2020part2">The Geography of Unemployment in 2020–2021</a></p>
+<p><a href="#top">Back to top</a></p>
+</div>
+<div id="references" class="section level3 unnumbered">
+<h3>References</h3>
+<div id="refs" class="references">
+<div id="ref-ipums2020">
+<p>Flood, Sarah, Miriam King, Renae Rodgers, Steven Ruggles, and J. Robert Warrenumley. 2021. “Integrated Public Use Microdata Series, Current Population Survey.” <a href="https://cps.ipums.org/cps">https://cps.ipums.org/cps</a>.</p>
+</div>
+<div id="ref-srvyr2020">
+<p>Freedman Ellis, Greg, and Ben Schneider. 2020. <em>Srvyr: ’Dplyr’-Like Syntax for Summary Statistics of Survey Data</em>. <a href="https://CRAN.R-project.org/package=srvyr">https://CRAN.R-project.org/package=srvyr</a>.</p>
+</div>
+<div id="ref-lamley2010">
+<p>Lumley, Thomas S. 2010. <em>Complex Surveys: A Guide to Analysis Using R</em>. Wiley Publishing.</p>
+</div>
+</div>
+</div>

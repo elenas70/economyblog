@@ -1,6 +1,6 @@
 ---
 title: "Labor Force Participation and Employment of Men and Women in the U.S. During the COVID-19 Pandemic"
-subtitle:  "<br> [Econblog](https://elenas70.github.io/econblog/)"
+subtitle:  "<br> [Econblog](https://elenas70.github.io/econblog/)" 
 author: "<br> [Elena Stolpovsky](https://www.linkedin.com/in/estolpovsky/)"
 date: 2021-03-01T21:13:14-05:00
 categories: ["R"]
