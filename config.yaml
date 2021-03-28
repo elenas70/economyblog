@@ -43,7 +43,7 @@ params:
     article:
         math: false
         license:
-            enabled: true
+            enabled: false
             default: Licensed under CC0
 
     comments:
