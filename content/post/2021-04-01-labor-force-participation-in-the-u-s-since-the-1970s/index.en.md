@@ -6,15 +6,14 @@ slug: labor-force-participation-in-the-u-s-since-the-1970s
 categories:
   - Labor Market
 tags:
-  - COVID
   - Labor Force Participation
   - Labor Market
+  - COVID
 description: "Trends in U.S. labor force participation and reasons for nonparticipation based on the Current Population Survey."
 image: ~
 math: ~
 license: ~
 hidden: no
-comments: yes
 ---
 
 The labor force participation rates of men and women were converging during 1976–2000, with labor force participation rate of men declining, and that of women rising rapidly. During 2000–2021 the rates for men and women moved approximately in parallel exhibiting a slightly negative trend and dipping in response to the Great Recession and the COVID Recession. 
