@@ -13,3 +13,5 @@ hidden: no
 comments: yes
 ---
 
+The [new version of EconBlog](https://elenas70.github.io/econblog/) is hosted on [GitHub Pages](https://pages.github.com/).
+
