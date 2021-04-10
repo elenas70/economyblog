@@ -5,7 +5,7 @@ date: '2021-04-07'
 slug: this-site-is-migrating-to-https-elenas70-github-io-econblog
 categories: []
 tags: []
-description: 'Find me at: elenas70.github.io/econblog'
+description: 'Address: https://elenas70.github.io/econblog/'
 image: ~
 math: ~
 license: ~
